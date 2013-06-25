@@ -4,7 +4,8 @@ VERSION = 0.7.3
 INCLUDEPATH += src src/json src/qt i2psam
 DEFINES += QT_GUI BOOST_CHRONO_INLINED BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE USE_IPV6 USE_NATIVE_I2P
 CONFIG += no_include_pwd
-QT += core gui
+QT += core gui network
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt
