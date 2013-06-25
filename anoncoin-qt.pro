@@ -78,15 +78,16 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
     QTPLUGIN += qcncodecs qjpcodecs qtwcodecs qkrcodecs qtaccessiblewidgets
 }
 
-!windows {
-    # for extra security against potential buffer overflows
-    QMAKE_CXXFLAGS += -fstack-protector
-    QMAKE_LFLAGS += -fstack-protector
-    !contains(USE_CLANG, 1) {
-        QMAKE_LFLAGS += -fstack-protector
-    }
-    # do not enable this on windows, as it will result in a non-working executable!
+# for extra security against potential buffer overflows
+QMAKE_CXXFLAGS += -fstack-protector -fstack-protector-all
+QMAKE_LFLAGS += -fstack-protector -fstack-protector-all
+!contains(USE_CLANG, 1) {
+    QMAKE_LFLAGS += -fstack-protector -fstack-protector-all
 }
+# for extra security (see: https://wiki.debian.org/Hardening)
+QMAKE_CXXFLAGS *= -D_FORTIFY_SOURCE=2 -Wl,-z,relro -Wl,-z,now
+win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat
+win32:QMAKE_LFLAGS *= -static-libgcc -static-libstdc++
 
 contains(USE_CLANG, 1) {
     QMAKE_CC = clang
