@@ -849,6 +849,82 @@ static const int64 nTargetTimespan = 86184; //420 * 205.2; = 86184 // Anoncoin: 
 static const int64 nTargetSpacing = 205;//3.42 * 60; // Anoncoin: 3.42 minutes
 static const int64 nInterval = nTargetTimespan / nTargetSpacing;
 
+double static GetDifficulty(const CBlockIndex* blockindex = NULL) {
+    // Floating point number that is a multiple of the minimum difficulty,
+    // minimum difficulty = 1.0.
+    if (blockindex == NULL) {
+        if (pindexBest == NULL)
+            return 1.0;
+        else
+            blockindex = pindexBest;
+    }
+
+    int nShift = (blockindex->nBits >> 24) & 0xff;
+
+    double dDiff =
+        (double)0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
+
+    while (nShift < 29) {
+        dDiff *= 256.0;
+        nShift++;
+    }
+    while (nShift > 29) {
+        dDiff /= 256.0;
+        nShift--;
+    }
+
+    return dDiff;
+}
+
+int64 static GetNetworkHashPS(int lookup) {
+    if (pindexBest == NULL)
+        return 0;
+
+    if (lookup > pindexBest->nHeight)
+        lookup = pindexBest->nHeight;
+
+    CBlockIndex* pindexPrev = pindexBest;
+    for (int i = 0; i < lookup; i++)
+        pindexPrev = pindexPrev->pprev;
+
+    double timeDiff = pindexBest->GetBlockTime() - pindexPrev->GetBlockTime();
+    double timePerBlock = timeDiff / lookup;
+
+    return (int64)(((double)GetDifficulty() * pow(2.0, 32)) / timePerBlock);
+}
+
+
+int64 GetTargetSpacing() {
+    int64 nTargetSpacing = 60 - GetNetworkHashPS(4) / 1000000;
+
+    if(nTargetSpacing < 30) {
+        nTargetSpacing = 30;
+    }
+
+    return nTargetSpacing;
+}
+
+
+int64 GetInterval() {
+    int64 nInterval = GetNetworkHashPS(2) / 1000000;
+
+    if(nInterval < 3) {
+        nInterval = 3;
+    } else if(nInterval > 75) {
+        nInterval = 75;
+    }
+
+    return nInterval;
+}
+
+
+int64 GetTargetTimespan() {
+    int64 nTargetTimespan = GetTargetSpacing() * GetInterval();
+    return nTargetTimespan;
+}
+
+
+
 //
 // minimum amount of work that could possibly be required nTime after
 // minimum work required was nBase
@@ -866,6 +942,8 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     {
         // Maximum 141% adjustment...
         bnResult = (bnResult * 99) / 70;
+        // Maximum 400% adjustment...
+        //bnResult *= 4;
         // ... in best-case exactly 4-times-normal target time
         nTime -= nTargetTimespan*4;
     }
