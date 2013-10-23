@@ -859,11 +859,11 @@ static const int nDifficultySwitchHeight2 = 77777;
 static const int nDifficultyProtocol3 = 87777;
 
 
-unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const CBlockHeader *pblock, uint64 TargetBlocksSpacingSeconds, uint64 PastBlocksMin, uint64 PastBlocksMax) {
+unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const CBlock *pblock, uint64 TargetBlocksSpacingSeconds, uint64 PastBlocksMin, uint64 PastBlocksMax) {
     /* current difficulty formula, Anoncoin - kimoto gravity well */
     const CBlockIndex  *BlockLastSolved             = pindexLast;
     const CBlockIndex  *BlockReading                = pindexLast;
-    const CBlockHeader *BlockCreating               = pblock;
+    const CBlock *BlockCreating               = pblock;
                         BlockCreating               = BlockCreating;
     uint64              PastBlocksMass              = 0;
     int64               PastRateActualSeconds       = 0;
@@ -921,6 +921,17 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const CBloc
     return bnNew.GetCompact();
 }
 
+unsigned int static NeoGetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
+{
+    static const int64  BlocksTargetSpacing         = 3 * 60; // 3 minutes
+    unsigned int        TimeDaySeconds              = 60 * 60 * 24;
+    int64               PastSecondsMin              = TimeDaySeconds * 0.25;
+    int64               PastSecondsMax              = TimeDaySeconds * 7;
+    uint64              PastBlocksMin               = PastSecondsMin / BlocksTargetSpacing;
+    uint64              PastBlocksMax               = PastSecondsMax / BlocksTargetSpacing;
+
+    return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
+}
 
 //
 // minimum amount of work that could possibly be required nTime after
@@ -947,19 +958,7 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     return bnResult.GetCompact();
 }
 
-unsigned int static NeoGetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
-{
-    static const int64  BlocksTargetSpacing         = 3 * 60; // 3 minutes
-    unsigned int        TimeDaySeconds              = 60 * 60 * 24;
-    int64               PastSecondsMin              = TimeDaySeconds * 0.25;
-    int64               PastSecondsMax              = TimeDaySeconds * 7;
-    uint64              PastBlocksMin               = PastSecondsMin / BlocksTargetSpacing;
-    uint64              PastBlocksMax               = PastSecondsMax / BlocksTargetSpacing;
-
-    return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
-}
-
-unsigned int static OldGetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
+unsigned int static OldGetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
     unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
 
@@ -1056,7 +1055,7 @@ unsigned int static OldGetNextWorkRequired(const CBlockIndex* pindexLast, const 
     return bnNew.GetCompact();
 }
 
-unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
+unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
     assert(pindexLast);
     if (pindexLast->nHeight > nDifficultyProtocol3 || fTestNet) {
@@ -1970,13 +1969,13 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
         CBigNum bnNewBlock;
         bnNewBlock.SetCompact(pblock->nBits);
         CBigNum bnRequired;
-        bnRequired.SetCompact(ComputeMinWork(pcheckpoint->nBits, deltaTime));
+        /*bnRequired.SetCompact(ComputeMinWork(pcheckpoint->nBits, deltaTime));
         if (bnNewBlock > bnRequired)
         {
             if (pfrom)
                 pfrom->Misbehaving(100);
             return error("ProcessBlock() : block with too little proof-of-work");
-        }
+        }*/
     }
 
 
