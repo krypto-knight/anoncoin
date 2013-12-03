@@ -580,6 +580,8 @@ bool AppInit2()
     if (mapArgs.count(I2P_NET_NAME_PARAM) && mapArgs[I2P_NET_NAME_PARAM] == "1") {
         // Disable on i2p per default
         SoftSetBoolArg("-irc", false);
+	// Disable DNS seed
+	SoftSetBoolArg("-dnsseed", false);
 #ifdef USE_UPNP
         SoftSetBoolArg("-upnp", false);
 #endif
