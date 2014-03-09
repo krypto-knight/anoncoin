@@ -8,7 +8,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include <inttypes.h>
+#include <stdint.h>
 #include <string>
 #include <vector>
 
